@@ -9,5 +9,16 @@
 date()
 
 ```
-The text continues here.
+## About me
+
+I have used *R and RStudio* quite a lot in my work. I'm familiar with ***Git and Github***, but have not become 'fluent' with them yet -- in fact, using them has always felt a bit cumbersome. I hope this course will help me get better with using Git/GitHub.
+
+I heard about the course from my supervisor and department mailing list.
+
+Here is a link to my github page for this project:**https://github.com/jpkos/IODS-project**
+
+List test:
+
+- First item
+- Second item
 
