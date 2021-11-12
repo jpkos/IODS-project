@@ -1,13 +1,87 @@
-# Insert chapter 2 title here
+# Chapter 2: Linear regression practice
 
-*Describe the work you have done this week and summarize your learning.*
+In this exercise, we are using linear regression to evaluate how different learning approaches affect student's performance in a statistics course.
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+We will start off by loading the libraries
+```{r, results='hide', message=FALSE}
+library(dplyr)
+library(GGally)
+library(ggplot2)
+```
+## Read and describe the data
 
+In the data wrangling section, we created a csv file with the data. Let's load that.
 ```{r}
-date()
+data <- read.csv("data/learning2014_csv.csv")
 ```
 
-Here we go again...
+Pick only the combined columns and the columns with participant info
+```{r}
+cols <- c("Age", "Attitude", "Points", "gender", "deep", "surf", "stra")
+data <- data[cols]
+```
+
+Data overview (dimensions [rows and cols] and structure [variables and their datatypes])
+```{r}
+dim(data)
+str(data)
+```
+
+THe dataset is about how students learning approaches affect their exam points in a statistics course. The data has combined variables that describe students learning approaches (deep, surface, strategic) and individual variables with participant information (age, gender, attitude towards statistics, exam points)
+
+Summary of the variables:
+```{r}
+summary(data)
+```
+
+Plot variable pairs to visualize correlations
+```{r}
+p <- ggpairs(data, mapping = aes(col=gender, alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
+p
+```
+
+Some notes about the variables:
+
+- No major differences between genders
+- Biggest correlations between exam points and the strategic and surface approaches (but opposite signs)
+- Surface approach had negative correlation with attitude, whereas deep approach had a positive
+- Age had an opposite effect between surface and strategic approaches
+- However, Age distribution showed that most people were around the same age (early to mid 20s)
+
+## Linear regression models
+
+Let's fit a model with three variables (strategic approach, surface approach, attitude) and the exam points as the target variable
+
+```{r}
+model <- lm(Points ~ stra + surf + Attitude, data=data)
+summary(model)
+```
+
+Attitude has a significant effect, the others do not. Let's fit another model, this time only with Attitude
+
+```{r}
+model2 <- lm(Points ~ Attitude, data=data)
+summary(model2)
+```
+
+The result indicates that students attitude has a strong correlation with their points. 1-point increase in Attitude score increased the students exam points by about 0.35 (t = 6.124, p < 0.001).
+
+The multiple R-squared measures how well the model fits the data, but also adjusts to the number of fitted variables. The multiple R-squared for the first model was 0.2074. This can be interpreted to mean that the model explains roughly 20.7% of the variance in the data. When we fit the model again with only Attitude as the variable, the R-squared is 0.1906 (~19.1%), meaning that Attitude alone explained a lot of the variance seen in the data.
+
+Diagnosis plots:
+```{r}
+plot(model2, c(1,2,5))
+```
+
+In the residuals vs fitted plot, we can see that with larger values the residuals may be getting smaller, although the number of data points is also smaller. Overall there does not seem to be serious heteroscedasticity (residuals should not depend on the fitted values, i.e. they should be randomly distributed).
+
+The QQ-plot shows some deviation from normalcy at the extreme values, however the deviations are smallish and may not violate normality assumptions (errors should be normally distributed).
+
+The residuals vs leverage plot shows that while there are a few points that are kind of outliers, they most likely do not seriously affect the model results.
+
+Finally, let's plot points vs attitude.
+
+```{r}
+plot(data$Attitude, data$Points)
+```
+
