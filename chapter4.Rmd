@@ -1,0 +1,119 @@
+
+# Chapter 4: Clustering and classification practice
+
+As usual, let's start with loading the libraries:
+```{r, results='hide', message=FALSE}
+library(dplyr)
+library(GGally)
+library(ggplot2)
+library(tidyr)
+library(caret)
+library(MASS)
+```
+
+## Dataset
+
+Load the Boston dataset from the MASS package
+
+```{r}
+data("Boston")
+```
+Explore the data
+```{r}
+summary(Boston)
+str(Boston)
+```
+The dataset describes the housing values in Boston and includes several values that could potentially affect housing values. These include: crime rate (crim), average number of rooms per house (rm), nitrogen oxide concentration (nox), property tax (tax), black (proportion of black residents), and so on.
+
+Let us next create graphical plots of the dataset to visualize correlations:
+```{r, fig.width=10, fig.height=10}
+ggpairs(Boston, mapping = aes(alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
+
+```
+
+The strongest correlations with median housing value are:
+
+- lstat (lower status of the population): -0.738. More lower class (less educated, poor employment) population will decrease housing prices.
+- rm (average number of rooms): 0.695. More rooms will increase price.
+- ptratio (pupil-teacher ratio): -0.508. Bigger P-T ratios (pupils per teacher) decrease prices.
+- indus (proportion of non-retail business acres): -0.484. More land reserved for businesses will decrease housing value.
+
+Each of the 4 strongest correlations make sense intuitively.
+
+Show summary of the data:
+```{r}
+summary(Boston)
+```
+Some notes about this summary:
+
+- age: this is the % of houses built before 1940. The median % is 77.5, so most of the houses are pre-1940s (data was collected in 1970s, so not that old at the time)
+- 
+
+## Analysis
+
+### LDA
+
+Scale the dataset
+```{r}
+Boston <- data.frame(scale(Boston))
+summary(Boston)
+```
+Now each variable has mean 0 and std 1. Next, we will categorize the crime rate variable into quantiles
+```{r}
+quants <- quantile(Boston$crim)
+crimerate <- cut(Boston$crim, breaks=quants, include.lowest=TRUE)
+```
+Drop crimerate from original dataset
+```{r}
+Boston2 <- Boston[,!(names(Boston) %in% c("crim"))]
+Boston2$crim_cat <- crimerate
+```
+Divide into train/val datasets with 80% ratio
+```{r}
+train_ind <- sample(nrow(Boston2), nrow(Boston2)*0.8)
+Boston2.train <- Boston2[train_ind,]
+Boston2.test <- Boston2[-train_ind,]
+```
+Fit Linear Discrimant Analysis (LDA)
+```{r}
+lda.model <- lda(crim_cat ~., data=Boston2.train)
+```
+
+(Put plots here)
+
+### K-means
+Next we will explore the data using clustering methods, namely the k-means clustering approach.
+First, fit the model using k=4:
+```{r}
+km.model <- kmeans(Boston, centers=4)
+```
+
+Plot results
+```{r, fig.width=15, fig.height=15}
+pairs(Boston, col=km.model$cluster)
+```
+
+
+We can optimize the number of clusters by finding k so that the sum of squared errors within clusters is minimized. Using the code from DataCamp:
+```{r}
+
+k_max <- 10
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+
+There is a sharp drop at k=2, and after that the drops are more gradual. We can plot kmeans with k=2.
+
+```{r}
+km.model2 <- kmeans(Boston, centers=2)
+```
+
+Plot
+```{r, fig.width=15, fig.height=15}
+pairs(Boston, col=km.model2$cluster)
+```
+It seems that 2 is indeed a good number of clusters; visual inspections shows that there are no clear outliers (i.e. possible third clusters that stick out)

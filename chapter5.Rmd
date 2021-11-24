@@ -1,0 +1,48 @@
+# Chapter 5: Dimension reduction practice
+As usual, let's start with loading the libraries:
+
+```{r, results='hide', message=FALSE}
+library(dplyr)
+library(GGally)
+library(ggplot2)
+library(tidyr)
+library(caret)
+library(MASS)
+```
+
+## Dataset description
+Load the data we processed in the data wrangling section (actually, I'm using the ready made dataset)
+```{r}
+data <- read.csv("data/human/human2.txt")
+```
+Print a summary of the data structure
+```{r}
+str(data)
+```
+The dataset includes human development metrics from different countries. The metrics include life expectancy, GNI, education level, and so on.
+
+Plot variable pairs to visualize correlations
+```{r}
+p <- ggpairs(data, mapping = aes(alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
+p
+```
+
+The strongest correlations can be seen in
+- 1
+- 2
+- 3
+
+Scale the data
+```{r}
+data.scaled <- data.frame(scale(data))
+```
+
+## Analysis
+
+Now we shall run the principal component analysis (PCA) on the data. First with the non-scaled data.
+
+```{r}
+
+```
+
+
