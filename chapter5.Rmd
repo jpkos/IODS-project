@@ -8,6 +8,7 @@ library(ggplot2)
 library(tidyr)
 library(caret)
 library(MASS)
+library(reshape2)
 ```
 
 ## Dataset description
@@ -19,7 +20,11 @@ Print a summary of the data structure
 ```{r}
 str(data)
 ```
-The dataset includes human development metrics from different countries. The metrics include life expectancy, GNI, education level, and so on.
+The dataset includes human development metrics such as life expectancy, GNI, education level from different countries. Definitions for some metrics:
+
+- Maternal mortality (Mat.Mor): mortality per 100 000 births
+- Adolescent birth rate (Ado.Birth): number of births to women of 15-19 years of age, per 1000 women in the same age group
+-
 
 Plot variable pairs to visualize correlations
 ```{r}
@@ -28,9 +33,11 @@ p
 ```
 
 The strongest correlations can be seen in
-- 1
-- 2
-- 3
+
+1. Life expectancy and maternal mortality (-0.857): Countries with high maternal mortality have lower life expectancy
+2. Adolescent birth rate and maternal mortality (0.759): Countries with lots of 15-19 year old mother have higher maternal mortality
+3. Maternal mortality and education level (-0.736): Countries with lower education level have higher maternal mortality
+4. Educational level and life expectany (0.624): Countries with higher educated population have longer life expectancy.
 
 Scale the data
 ```{r}
@@ -42,7 +49,70 @@ data.scaled <- data.frame(scale(data))
 Now we shall run the principal component analysis (PCA) on the data. First with the non-scaled data.
 
 ```{r}
+pca.original <- prcomp(data)
+```
+Draw a biplot
+```{r, fig.width=15, fig.height=15}
+biplot(pca.original, choices = 1:2)
+```
+Then again, this time for the scaled data
+```{r}
+pca.scaled <- prcomp(data.scaled)
+```
+and plot
+```{r, fig.width=15, fig.height=15}
+biplot(pca.scaled, choices = 1:2)
+```
+The results look much different. This is because the different metrics were measured using different units. The units are somewhat arbritrary (you can measure maternal mortality per 100k people or per 1 mil people), so they cannot be compared (apples and oranges). When we normalize the data, all metrics are squeezed between 0 and 1, after which we can better compare them. 
 
+When we look at the principal components in the last figure, we can draw see some patterns:
+
+- When we move to the left on the first principal component and up on the second component, we see Nordic countries that are highly developed in many areas. 
+
+- When we move down along PC2, we see countries that are wealthy but may have issues with gender inequality (women with parliamentary representation and in labor force)
+
+- When we move to the right, we see countries that are less wealthy, and have problems with maternal mortality and girls giving birth at young age.
+
+- Lower right hand corner has countries that are poor, have gender inequality and the abovementioned problems connected to child birth.
+
+### Tea dataset
+
+Load the tea dataset:
+```{r}
+library(FactoMineR)
+data(tea)
+```
+Summary of the data:
+```{r}
+summary(tea)
+```
+Structure:
+
+```{r}
+str(tea)
+``` 
+
+Dimensions:
+```{r}
+dim(tea)
+```
+The dataset has 36 columns and 300 rows. The columns (variables) are related to people's tea drinking habits. Most of the variables are categorical and most of them have two levels such as sugar use (yes/no).
+
+Do multiple correspondence analysis and visualize
+```{r, fig.width=15, fig.height=15}
+MCA(X=tea[, -which(names(tea) %in% c('age'))], method="indicator")
 ```
 
+
+In the plot, we see the different variable levels drawn as points on two axes. The distance between the categories tells us how similar they are. Two of the lowest points in the graph are the age group 15-24 and student, meaning that these two levels are similar (young people tend to be students). We can also see some not-so-obvious patterns:
+
+- Black, green and Earl Grey teas are in completely different parts of the plot. This indicates that subjects with different characteristics (how they drink tea and their perception of the tea) affects what type of tea they drink. For example, older people prefer black tea, younger people prefer Earl Grey. Non-workers are closer to black tea and workers are closer to green tea.
+
+- Older people prefer unpackaged tea, younger people use packaged tea more often.
+
+- Workmen prefer cheap tea, older people prefer upscale tea.
+
+- Young people and/or students are clearly different from other groups.
+
+- People who drink tea 1 to 2 times/week are more likely to use sugar than those who drink 3 to 6 times/week. Older people don't use sugar, workers are more likely to use sugar.
 
