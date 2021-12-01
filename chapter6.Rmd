@@ -1,3 +1,125 @@
 # Chapter 6: Longitudinal data analysis practice
 
+Load libraries
+```{r}
+library(reshape2)
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+```
 
+## Analysis of RATS data
+
+We will start by analysing the RATS dataset using the analysis presented in chapter 8 from the MABS book.
+
+### Data
+
+Load data
+```{r}
+catcols.RATS <- c("ID", "Group", "Time")
+time.order <- c("WD1", "WD8", "WD15", "WD22", "WD29", "WD36", "WD43","WD44", "WD50", "WD57", "WD64")
+RATS <- read.csv("data/chapter5/RATS.csv")
+RATS[catcols.RATS] <- lapply(RATS[catcols.RATS], factor)
+RATS <- RATS[-1]
+RATS$Time <- factor(RATS$Time, levels=time.order)
+```
+Print summary to see what type of data we have:
+```{r}
+summary(RATS)
+```
+
+We have four columns: ID, Group, Time and value. ID, Group and Time are categorical.
+
+Next, visualize data:
+```{r}
+ggplot(data=RATS, aes(x=Time, y=value, col=ID)) + geom_point()
+```
+
+Looks like the IDs split into two groups, those below 300 and those above 400. The ones that are above 400 show a slight increase over time. The below 300 group is more constant. The different IDs also seem to be correlated, when one ID increases, others increase too, and when one ID decreases, others do the same, and there is no clear delay. Between WD29 and WD44 there was little to no change, then increase continued. There are also some individual differences between IDs, some increase more than others. We can also plot by group:
+
+```{r}
+ggplot(data=RATS, aes(x=Time, y=value, col=Group)) + geom_point()
+```
+Now we see more patterns. The below 300 group actually belongs to the same group. Group 2 has the second largest valeus, but there is one subject (ID 12) who is an outlier. It's possible that this one ID was mislabeled.
+
+## Analysis of BPRS data
+
+### Data
+Load data
+
+```{r}
+catcols.BPRS <- c("treatment", "subject", "week")
+week.order <- c("week0","week1","week2","week3","week4","week5","week6","week7","week8")
+BPRS <- read.csv("data/chapter5/BPRS.csv")
+BPRS[catcols.BPRS] <- lapply(BPRS[catcols.BPRS], factor)
+BPRS <- BPRS[-1]
+BPRS$week <- factor(BPRS$week, levels=week.order)
+```
+Visualize. First plot by subject:
+```{r}
+ggplot(data=BPRS, aes(x=week, y=value, col=subject)) + geom_point()
+```
+
+There is quite a lot of variation between and within participants, so it's hard to see any interesting patterns in this data. One thing we note is that the values seem to decrease until week 5 or 6, then the decrease stops and there is even increase in some participants.
+
+Then let's look at the values by treatment, it will probably be more interesting:
+
+```{r}
+ggplot(data=BPRS, aes(x=week, y=value, col=treatment)) + geom_point()
+```
+Even with the treatment grouping we note that 
+
+Because we are considering the effects of different treatments, it might be also fruitful to compare data at the beginning and at the end of the experiment. Let's plot a boxplot, first by subject:
+```{r}
+ggplot(data=subset(BPRS, BPRS$week %in% c("week0", "week8")), aes(x=week, y=value, col=subject)) + geom_boxplot()
+```
+From this it's again hard to see any clear trend, except that the values seem to decrease by week 8 for almost all subjects.
+
+Then plot by treatment:
+```{r}
+ggplot(data=subset(BPRS, BPRS$week %in% c("week0", "week8")), aes(x=week, y=value, col=treatment)) + geom_boxplot()
+```
+Now the decrease over time is even clearer. However, there seems to be no difference between the treatments.
+
+Fit linear mixed effects model. The model is defined as follows:
+
+- We have several measurements from the same subjects, so we use subject as a random effect intercept
+- We want to see if the treatment affected the values, so treatment will be the fixed effect
+- The value could also reduce over time, so we use week as anoter fixed effect (interaction of time and treatment)
+- We will start by considering only the first and last week's data
+```{r}
+lmer.m1 <- lmer(value ~ treatment*week + (1|subject), data=subset(BPRS, BPRS$week %in% c("week0", "week8")))
+summary(lmer.m1)
+```
+
+The difference between treatments was 2.0 (treatment 2 higher than treatment 1) in the beginning, but the effect was not significant (t = 0.518, p = 0.606). The values decreased over time, by week8 the treatment 1 value was -17.70 smaller than in the beginning (t = -4.585, p<0.001). However, for treatment 2 value at week 8 was 2.250 higher than for treatment 1, which is almost the same as in the beginning. Therefore the treatment did not seem to have any effect.
+
+The standard deviation of the random effect of subject (intercept) was 5.27, so there was some difference between subjects.
+
+Based on this analysis, the treatment did not have any effect. This is in line with what we saw in the graphical data exploration. Most of the decrease in values comes from time.
+
+We can print the random coefficients:
+```{r}
+coef(lmer.m1)
+```
+
+This shows the random intercepts for participants, with respect to the intercept shown in the model summary.
+
+Perhaps the treatment will have different effect on each subject? After all, we saw in the plots that the subjects differed quite a lot. Furthermore, let's add the rest of the weeks to the analysis:
+```{r}
+BPRS$week_num <- as.numeric(substr(BPRS$week, 5, 8))
+```
+
+
+We can then add a random slope for each subject:
+```{r}
+lmer.m2 <- lmer(value ~ treatment*week_num + (1+week_num|subject), data=BPRS)
+summary(lmer.m2)
+```
+This did not change the results markedly. Treatment 2 had -2.2911 lower value. Each week the value lowered by -2.623 (t=-7.187, p < 0.001). Treatment does not seem to have any effect.
+
+Here are the coefficients:
+```{r}
+coef(lmer.m2)
+```
+We can see that there was quite a lot of variation in how participants responded each week.
