@@ -24,7 +24,8 @@ The dataset includes human development metrics such as life expectancy, GNI, edu
 
 - Maternal mortality (Mat.Mor): mortality per 100 000 births
 - Adolescent birth rate (Ado.Birth): number of births to women of 15-19 years of age, per 1000 women in the same age group
--
+- Female parliamentary represenation (Parli.F): percentage of women in the parliament
+- Female to male ratio in secondary school (Edu2.FM): Women in secondary school/Men in secondary school
 
 Plot variable pairs to visualize correlations
 ```{r}
